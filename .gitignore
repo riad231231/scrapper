@@ -1,0 +1,14 @@
+.env
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+prospection_log.csv
+batch_log.json
+prospection.db
+exports/
+.DS_Store
+*.egg-info/
+.venv/
+venv/
+node_modules/

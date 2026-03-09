@@ -1,0 +1,10 @@
+requests
+google-generativeai
+google-api-python-client
+google-auth-oauthlib
+google-auth-httplib2
+python-dotenv
+beautifulsoup4
+lxml
+openai
+flask

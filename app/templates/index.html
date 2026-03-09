@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ProspectApp — Studio Riad</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --gold: #c9a84c;
+    --gold-light: #e8c96d;
+    --gold-dark: #9a7a2e;
+    --bg: #0a0a0f;
+    --bg2: #111118;
+    --bg3: #1a1a26;
+    --border: rgba(201,168,76,0.15);
+    --text: #e8e8f0;
+    --text-muted: #888899;
+    --green: #4ade80;
+    --red: #f87171;
+    --blue: #60a5fa;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+  /* ── NAV ── */
+  nav { display: flex; align-items: center; gap: 2rem; padding: 1rem 2rem;
+    background: var(--bg2); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 100; }
+  .logo { font-size: 1.1rem; font-weight: 700; color: var(--gold);
+    display: flex; align-items: center; gap: .5rem; letter-spacing: .05em; }
+  .logo span { font-weight: 300; color: var(--text-muted); font-size: .9rem; }
+  .nav-links { display: flex; gap: .25rem; }
+  .nav-btn { background: none; border: none; color: var(--text-muted); padding: .5rem 1rem;
+    border-radius: 6px; cursor: pointer; font-size: .9rem; font-family: inherit; transition: all .2s; }
+  .nav-btn:hover { color: var(--text); background: var(--bg3); }
+  .nav-btn.active { color: var(--gold); background: rgba(201,168,76,.1); border: 1px solid var(--border); }
+  .status-pill { margin-left: auto; padding: .3rem .8rem; border-radius: 20px; font-size: .8rem;
+    background: rgba(74,222,128,.1); border: 1px solid rgba(74,222,128,.3); color: var(--green); display: flex; align-items: center; gap: .4rem; }
+  .status-pill.running { background: rgba(251,191,36,.1); border-color: rgba(251,191,36,.3); color: #fbbf24; }
+  .pulse { width: 7px; height: 7px; border-radius: 50%; background: currentColor; animation: pulse 1.5s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+  /* ── LAYOUT ── */
+  main { max-width: 1300px; margin: 0 auto; padding: 2rem; }
+  .view { display: none; }
+  .view.active { display: block; }
+
+  /* ── STATS BAR ── */
+  .stats-bar { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 2rem; }
+  .stat-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 12px;
+    padding: 1.25rem; display: flex; flex-direction: column; gap: .3rem; }
+  .stat-label { font-size: .75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: .08em; }
+  .stat-value { font-size: 2rem; font-weight: 700; color: var(--gold); line-height: 1; }
+  .stat-sub { font-size: .8rem; color: var(--text-muted); }
+
+  /* ── DASHBOARD GRID ── */
+  .section-title { font-size: 1rem; font-weight: 600; color: var(--text-muted); margin-bottom: 1rem;
+    text-transform: uppercase; letter-spacing: .08em; }
+  .days-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: .75rem; }
+  .day-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 10px;
+    padding: 1rem; cursor: pointer; transition: all .2s; position: relative; overflow: hidden; }
+  .day-card:hover { border-color: var(--gold); transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(201,168,76,.1); }
+  .day-card.done { border-color: rgba(74,222,128,.25); }
+  .day-card.done::before { content: ''; position: absolute; top:0; left:0; right:0; height:2px; background: var(--green); }
+  .day-card.running-card { border-color: var(--gold); animation: glowPulse 2s infinite; }
+  @keyframes glowPulse { 0%,100%{box-shadow:0 0 0 rgba(201,168,76,0)} 50%{box-shadow:0 0 20px rgba(201,168,76,.3)} }
+  .day-num { font-size: .7rem; color: var(--text-muted); margin-bottom: .3rem; }
+  .day-cible { font-size: .85rem; font-weight: 500; line-height: 1.3; margin-bottom: .5rem; }
+  .day-meta { display: flex; align-items: center; justify-content: space-between; }
+  .day-contacts { font-size: .8rem; color: var(--green); font-weight: 600; }
+  .day-badge { font-size: .65rem; padding: .2rem .5rem; border-radius: 4px;
+    background: rgba(74,222,128,.1); color: var(--green); border: 1px solid rgba(74,222,128,.2); }
+  .day-badge.empty { background: transparent; color: var(--text-muted); border-color: transparent; }
+
+  /* ── MODAL ── */
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.7);
+    backdrop-filter: blur(6px); z-index: 200; align-items: center; justify-content: center; }
+  .modal-overlay.open { display: flex; }
+  .modal { background: var(--bg2); border: 1px solid var(--border); border-radius: 16px;
+    width: 90%; max-width: 700px; max-height: 90vh; display: flex; flex-direction: column; overflow: hidden; }
+  .modal-header { padding: 1.5rem; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+  .modal-title { font-size: 1.1rem; font-weight: 600; color: var(--gold); }
+  .modal-close { background: none; border: none; color: var(--text-muted); font-size: 1.5rem;
+    cursor: pointer; line-height: 1; padding: .25rem; }
+  .modal-body { padding: 1.5rem; overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 1rem; }
+  .run-controls { display: flex; gap: 1rem; align-items: flex-end; }
+  .form-group { flex: 1; display: flex; flex-direction: column; gap: .4rem; }
+  .form-group label { font-size: .8rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: .05em; }
+  .form-group input, .form-group select, .form-group textarea {
+    background: var(--bg3); border: 1px solid var(--border); border-radius: 8px;
+    padding: .6rem .9rem; color: var(--text); font-family: inherit; font-size: .9rem; outline: none;
+    transition: border-color .2s; }
+  .form-group input:focus, .form-group textarea:focus { border-color: var(--gold); }
+  .form-group textarea { resize: vertical; min-height: 80px; }
+  .btn { padding: .65rem 1.4rem; border-radius: 8px; border: none; cursor: pointer; font-family: inherit;
+    font-size: .9rem; font-weight: 600; transition: all .2s; }
+  .btn-primary { background: var(--gold); color: #0a0a0f; }
+  .btn-primary:hover { background: var(--gold-light); }
+  .btn-primary:disabled { opacity: .4; cursor: not-allowed; }
+  .btn-ghost { background: transparent; border: 1px solid var(--border); color: var(--text-muted); }
+  .btn-ghost:hover { border-color: var(--gold); color: var(--text); }
+  .btn-danger { background: rgba(248,113,113,.1); border: 1px solid rgba(248,113,113,.3); color: var(--red); }
+
+  /* ── CONSOLE ── */
+  .console-wrap { display: none; flex-direction: column; gap: .5rem; }
+  .console-wrap.visible { display: flex; }
+  .console-header { display: flex; align-items: center; justify-content: space-between; }
+  .console-title { font-size: .8rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: .05em; }
+  .console { background: #050508; border: 1px solid var(--border); border-radius: 8px;
+    padding: 1rem; height: 250px; overflow-y: auto; font-family: 'JetBrains Mono', 'Courier New', monospace;
+    font-size: .78rem; line-height: 1.6; }
+  .console .log-line { color: #aab; padding: .05rem 0; white-space: pre-wrap; word-break: break-all; }
+  .console .log-success { color: var(--green); }
+  .console .log-error { color: var(--red); }
+  .console .log-info { color: var(--gold); }
+
+  /* ── ROADMAP EDITOR ── */
+  .geo-bar { background: var(--bg2); border: 1px solid var(--border); border-radius: 12px;
+    padding: 1.25rem; margin-bottom: 1.5rem; display: flex; align-items: flex-end; gap: 1rem; }
+  .geo-bar .form-group { flex: 1; }
+  .roadmap-table { width: 100%; border-collapse: collapse; }
+  .roadmap-table th { padding: .6rem 1rem; text-align: left; font-size: .75rem; letter-spacing: .08em;
+    text-transform: uppercase; color: var(--text-muted); border-bottom: 1px solid var(--border); }
+  .roadmap-table td { padding: .5rem .75rem; border-bottom: 1px solid rgba(255,255,255,.04); vertical-align: middle; }
+  .roadmap-table tr:hover td { background: rgba(255,255,255,.02); }
+  .roadmap-table input, .roadmap-table textarea {
+    width: 100%; background: transparent; border: 1px solid transparent; border-radius: 6px;
+    padding: .3rem .5rem; color: var(--text); font-family: inherit; font-size: .82rem; outline: none; }
+  .roadmap-table input:focus, .roadmap-table textarea:focus {
+    border-color: var(--gold); background: var(--bg3); }
+  .save-day-btn { padding: .25rem .6rem; border-radius: 5px; background: rgba(201,168,76,.1);
+    border: 1px solid var(--border); color: var(--gold); font-size: .75rem; cursor: pointer;
+    transition: all .2s; white-space: nowrap; }
+  .save-day-btn:hover { background: rgba(201,168,76,.2); }
+
+  /* ── CONTACTS ── */
+  .filters-bar { display: flex; gap: .75rem; margin-bottom: 1.25rem; flex-wrap: wrap; }
+  .filter-select { background: var(--bg2); border: 1px solid var(--border); border-radius: 8px;
+    padding: .5rem .9rem; color: var(--text); font-family: inherit; font-size: .85rem; outline: none;
+    cursor: pointer; }
+  .contacts-table-wrap { overflow-x: auto; }
+  .contacts-table { width: 100%; border-collapse: collapse; }
+  .contacts-table th { padding: .75rem 1rem; text-align: left; font-size: .75rem; letter-spacing: .08em;
+    text-transform: uppercase; color: var(--text-muted); border-bottom: 1px solid var(--border); white-space: nowrap; }
+  .contacts-table td { padding: .65rem 1rem; border-bottom: 1px solid rgba(255,255,255,.04);
+    font-size: .85rem; }
+  .contacts-table tr:hover td { background: rgba(255,255,255,.02); }
+  .badge { display: inline-block; padding: .2rem .5rem; border-radius: 4px; font-size: .72rem; font-weight: 500; }
+  .badge-green { background: rgba(74,222,128,.1); color: var(--green); border: 1px solid rgba(74,222,128,.2); }
+  .badge-red { background: rgba(248,113,113,.1); color: var(--red); border: 1px solid rgba(248,113,113,.2); }
+  .badge-blue { background: rgba(96,165,250,.1); color: var(--blue); border: 1px solid rgba(96,165,250,.2); }
+
+  /* ── TOAST ── */
+  .toast { position: fixed; bottom: 2rem; right: 2rem; padding: .75rem 1.25rem; border-radius: 10px;
+    background: var(--bg3); border: 1px solid var(--border); color: var(--text);
+    font-size: .9rem; z-index: 999; transform: translateY(100px); opacity: 0;
+    transition: all .3s; pointer-events: none; }
+  .toast.show { transform: translateY(0); opacity: 1; }
+  .toast.success { border-color: rgba(74,222,128,.4); color: var(--green); }
+  .toast.error { border-color: rgba(248,113,113,.4); color: var(--red); }
+
+  /* ── UTILS ── */
+  .flex { display: flex; }
+  .gap-1 { gap: .5rem; }
+  .ml-auto { margin-left: auto; }
+  .text-muted { color: var(--text-muted); }
+  .fw-6 { font-weight: 600; }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="logo">🎬 ProspectApp <span>Studio Riad</span></div>
+  <div class="nav-links">
+    <button class="nav-btn active" onclick="showView('dashboard', this)">Dashboard</button>
+    <button class="nav-btn" onclick="showView('roadmap', this)">Roadmap</button>
+    <button class="nav-btn" onclick="showView('contacts', this)">Contacts</button>
+  </div>
+  <div class="status-pill" id="statusPill">
+    <div class="pulse"></div>
+    <span id="statusText">Prêt</span>
+  </div>
+</nav>
+
+<main>
+
+<!-- ══════════════ DASHBOARD ══════════════ -->
+<div class="view active" id="view-dashboard">
+  <!-- Stats -->
+  <div class="stats-bar">
+    <div class="stat-card">
+      <div class="stat-label">Total brouillons</div>
+      <div class="stat-value" id="statTotal">—</div>
+      <div class="stat-sub">contacts créés</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Aujourd'hui</div>
+      <div class="stat-value" id="statToday">—</div>
+      <div class="stat-sub">nouveaux brouillons</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Jours complétés</div>
+      <div class="stat-value" id="statDays">—</div>
+      <div class="stat-sub">sur 30 jours</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Zone actuelle</div>
+      <div class="stat-value" style="font-size:1.1rem;padding-top:.4rem" id="statGeo">—</div>
+      <div class="stat-sub"><button class="btn btn-ghost" style="font-size:.75rem;padding:.2rem .6rem;margin-top:.3rem" onclick="showView('roadmap',null)">Modifier</button></div>
+    </div>
+  </div>
+
+  <p class="section-title">Les 30 jours de prospection</p>
+  <div class="days-grid" id="daysGrid">
+    <div class="text-muted" style="padding:2rem">Chargement…</div>
+  </div>
+</div>
+
+<!-- ══════════════ ROADMAP ══════════════ -->
+<div class="view" id="view-roadmap">
+  <div class="geo-bar">
+    <div class="form-group">
+      <label>Zone géographique (appliquée à toutes les requêtes)</label>
+      <input type="text" id="geoInput" placeholder="ex: bretagne, lyon, marseille…">
+    </div>
+    <button class="btn btn-primary" onclick="saveGeo()">Appliquer à toute la roadmap</button>
+    <button class="btn btn-ghost" onclick="saveGeoOnly()">Sauvegarder sans modifier les requêtes</button>
+  </div>
+  <p class="section-title">Éditer les jours</p>
+  <table class="roadmap-table">
+    <thead>
+      <tr>
+        <th style="width:50px">Jour</th>
+        <th style="width:180px">Cible</th>
+        <th>Requête Maps</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody id="roadmapBody">
+      <tr><td colspan="4" class="text-muted" style="padding:2rem">Chargement…</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ══════════════ CONTACTS ══════════════ -->
+<div class="view" id="view-contacts">
+  <div class="flex gap-1" style="margin-bottom:1.25rem;align-items:center;flex-wrap:wrap">
+    <p class="section-title" style="margin:0">Historique contacts</p>
+    <div class="filters-bar" style="margin:0;flex:1">
+      <select class="filter-select" id="filterDay" onchange="loadContacts()">
+        <option value="">Tous les jours</option>
+      </select>
+      <select class="filter-select" id="filterStatus" onchange="loadContacts()">
+        <option value="">Tous les statuts</option>
+        <option value="draft_created">✅ Brouillon créé</option>
+        <option value="openai_error">❌ Erreur OpenAI</option>
+        <option value="gmail_error">❌ Erreur Gmail</option>
+      </select>
+    </div>
+    <button class="btn btn-ghost ml-auto" onclick="exportCsv()">⬇ Export CSV</button>
+  </div>
+  <div class="contacts-table-wrap">
+    <table class="contacts-table">
+      <thead>
+        <tr>
+          <th>Nom</th>
+          <th>Email</th>
+          <th>Jour</th>
+          <th>Zone</th>
+          <th>Source</th>
+          <th>Date</th>
+          <th>Statut</th>
+        </tr>
+      </thead>
+      <tbody id="contactsBody">
+        <tr><td colspan="7" class="text-muted" style="padding:2rem">Chargement…</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+</main>
+
+<!-- ══════════════ MODAL RUN ══════════════ -->
+<div class="modal-overlay" id="runModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="modalTitle">Lancer le Jour ?</div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="run-controls">
+        <div class="form-group">
+          <label>Nombre de prospects</label>
+          <input type="number" id="runCount" value="10" min="1" max="50">
+        </div>
+        <div class="form-group">
+          <label>Zone géographique</label>
+          <input type="text" id="runGeo" placeholder="ile de france">
+        </div>
+        <button class="btn btn-primary" id="runBtn" onclick="launchJob()">🚀 Lancer</button>
+      </div>
+      <div class="console-wrap" id="consoleWrap">
+        <div class="console-header">
+          <span class="console-title">Logs en temps réel</span>
+          <button class="btn-ghost" style="font-size:.75rem;padding:.2rem .5rem;border-radius:4px;background:transparent;border:1px solid var(--border);color:var(--text-muted);cursor:pointer" onclick="clearConsole()">Effacer</button>
+        </div>
+        <div class="console" id="console"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ── State ──────────────────────────────────────────────────
+let currentDay = null;
+let sseSource = null;
+let roadmapData = [];
+
+// ── Init ───────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  loadStats();
+  loadRoadmap();
+  loadSettings();
+  pollStatus();
+  setInterval(pollStatus, 5000);
+});
+
+// ── Navigation ─────────────────────────────────────────────
+function showView(name, btn) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('view-' + name).classList.add('active');
+  if (btn) btn.classList.add('active');
+  if (name === 'contacts') loadContacts();
+  if (name === 'roadmap') renderRoadmap();
+}
+
+// ── Stats ──────────────────────────────────────────────────
+async function loadStats() {
+  const r = await fetch('/api/stats');
+  const d = await r.json();
+  document.getElementById('statTotal').textContent = d.total_contacts ?? '—';
+  document.getElementById('statToday').textContent = d.today ?? '—';
+  document.getElementById('statDays').textContent = (d.days_done ?? '—') + ' / ' + (d.days_total ?? 30);
+}
+
+// ── Settings ───────────────────────────────────────────────
+async function loadSettings() {
+  const r = await fetch('/api/settings');
+  const d = await r.json();
+  document.getElementById('geoInput').value = d.geo_zone || 'ile de france';
+  document.getElementById('runGeo').value = d.geo_zone || 'ile de france';
+  document.getElementById('statGeo').textContent = d.geo_zone || '—';
+}
+
+async function saveGeo() {
+  const geo = document.getElementById('geoInput').value.trim();
+  if (!geo) return;
+  await fetch('/api/settings', { method: 'POST', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ geo_zone: geo, update_queries: true }) });
+  await loadRoadmap();
+  document.getElementById('statGeo').textContent = geo;
+  document.getElementById('runGeo').value = geo;
+  toast('✅ Zone appliquée à toute la roadmap !', 'success');
+}
+
+async function saveGeoOnly() {
+  const geo = document.getElementById('geoInput').value.trim();
+  if (!geo) return;
+  await fetch('/api/settings', { method: 'POST', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ geo_zone: geo, update_queries: false }) });
+  document.getElementById('statGeo').textContent = geo;
+  toast('✅ Zone sauvegardée', 'success');
+}
+
+// ── Roadmap ────────────────────────────────────────────────
+async function loadRoadmap() {
+  const r = await fetch('/api/roadmap');
+  roadmapData = await r.json();
+  renderDaysGrid();
+  renderRoadmap();
+}
+
+function renderDaysGrid() {
+  const grid = document.getElementById('daysGrid');
+  grid.innerHTML = roadmapData.map(d => {
+    const done = d.contacts_created > 0;
+    return `<div class="day-card ${done ? 'done' : ''}" onclick="openModal('${d.day}','${d.cible}')">
+      <div class="day-num">JOUR ${d.day}</div>
+      <div class="day-cible">${d.cible}</div>
+      <div class="day-meta">
+        <div class="day-contacts">${done ? '✅ ' + d.contacts_created + ' contacts' : '⬜ À faire'}</div>
+        ${done ? '<div class="day-badge">fait</div>' : '<div class="day-badge empty">—</div>'}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderRoadmap() {
+  const body = document.getElementById('roadmapBody');
+  body.innerHTML = roadmapData.map(d => `
+    <tr id="row-${d.day}">
+      <td><span style="color:var(--gold);font-weight:600">${d.day}</span></td>
+      <td style="color:var(--text-muted);font-size:.8rem">${d.cible}</td>
+      <td><input type="text" value="${escHtml(d.query)}" id="q-${d.day}" onchange="markDirty('${d.day}')"></td>
+      <td><button class="save-day-btn" onclick="saveDay('${d.day}')">Sauvegarder</button></td>
+    </tr>
+  `).join('');
+}
+
+function markDirty(day) {
+  const btn = document.querySelector(`#row-${day} .save-day-btn`);
+  if (btn) { btn.style.borderColor = 'var(--gold)'; btn.textContent = '💾 Sauvegarder'; }
+}
+
+async function saveDay(day) {
+  const q = document.getElementById('q-' + day)?.value;
+  await fetch('/api/roadmap/' + day, { method: 'POST', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ query: q }) });
+  const btn = document.querySelector(`#row-${day} .save-day-btn`);
+  if (btn) { btn.textContent = '✅ Sauvegardé'; btn.style.borderColor = 'var(--green)'; }
+  toast('Jour ' + day + ' sauvegardé', 'success');
+}
+
+// ── Modal Run ──────────────────────────────────────────────
+function openModal(day, cible) {
+  currentDay = day;
+  document.getElementById('modalTitle').textContent = `🚀 Jour ${day} — ${cible}`;
+  document.getElementById('runModal').classList.add('open');
+  document.getElementById('consoleWrap').classList.remove('visible');
+  document.getElementById('console').innerHTML = '';
+  document.getElementById('runBtn').disabled = false;
+}
+
+function closeModal() {
+  document.getElementById('runModal').classList.remove('open');
+  if (sseSource) { sseSource.close(); sseSource = null; }
+}
+
+async function launchJob() {
+  const count = parseInt(document.getElementById('runCount').value) || 10;
+  const geo = document.getElementById('runGeo').value.trim() || 'ile de france';
+  document.getElementById('runBtn').disabled = true;
+  document.getElementById('consoleWrap').classList.add('visible');
+  appendLog('🚀 Lancement du Jour ' + currentDay + '…', 'info');
+
+  const r = await fetch('/api/run/' + currentDay, {
+    method: 'POST', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ count, geo_zone: geo })
+  });
+  if (!r.ok) {
+    const err = await r.json();
+    appendLog('❌ ' + (err.error || 'Erreur'), 'error');
+    document.getElementById('runBtn').disabled = false;
+    return;
+  }
+
+  // SSE
+  sseSource = new EventSource('/api/stream');
+  sseSource.onmessage = (e) => {
+    if (e.data === '__DONE__') {
+      appendLog('✅ Job terminé !', 'success');
+      sseSource.close(); sseSource = null;
+      document.getElementById('runBtn').disabled = false;
+      loadStats();
+      loadRoadmap();
+    } else if (e.data !== '__PING__' && e.data !== 'connected') {
+      appendLog(e.data);
+    }
+  };
+}
+
+function appendLog(msg, type = '') {
+  const c = document.getElementById('console');
+  const line = document.createElement('div');
+  line.className = 'log-line' + (type ? ' log-' + type : '');
+  line.textContent = msg;
+  c.appendChild(line);
+  c.scrollTop = c.scrollHeight;
+}
+
+function clearConsole() { document.getElementById('console').innerHTML = ''; }
+
+// ── Contacts ───────────────────────────────────────────────
+async function loadContacts() {
+  const day = document.getElementById('filterDay').value;
+  const status = document.getElementById('filterStatus').value;
+  let url = '/api/contacts';
+  const params = [];
+  if (day) params.push('day=' + day);
+  if (status) params.push('status=' + status);
+  if (params.length) url += '?' + params.join('&');
+
+  const r = await fetch(url);
+  const contacts = await r.json();
+  const body = document.getElementById('contactsBody');
+
+  if (!contacts.length) {
+    body.innerHTML = '<tr><td colspan="7" style="padding:2rem;color:var(--text-muted)">Aucun contact trouvé</td></tr>';
+    return;
+  }
+
+  body.innerHTML = contacts.map(c => {
+    const badge = c.status === 'draft_created'
+      ? '<span class="badge badge-green">✉️ Brouillon</span>'
+      : '<span class="badge badge-red">❌ ' + c.status.replace('_', ' ') + '</span>';
+    const src = c.source === 'native'
+      ? '<span class="badge badge-green">🆓 Natif</span>'
+      : c.source === 'outscraper'
+        ? '<span class="badge badge-blue">💳 API</span>'
+        : '<span style="color:var(--text-muted)">—</span>';
+    const date = c.date ? c.date.substring(0, 16).replace('T', ' ') : '';
+    return `<tr>
+      <td class="fw-6">${escHtml(c.name || '')}</td>
+      <td style="color:var(--blue)">${escHtml(c.email || '')}</td>
+      <td style="color:var(--gold)">${c.day || '?'}</td>
+      <td style="color:var(--text-muted)">${escHtml(c.geo_zone || '')}</td>
+      <td>${src}</td>
+      <td style="color:var(--text-muted);font-size:.8rem">${date}</td>
+      <td>${badge}</td>
+    </tr>`;
+  }).join('');
+
+  // Populer le filtre des jours
+  const days = [...new Set(contacts.map(c => c.day).filter(Boolean))].sort((a,b) => +a - +b);
+  const filterDay = document.getElementById('filterDay');
+  const current = filterDay.value;
+  filterDay.innerHTML = '<option value="">Tous les jours</option>' +
+    days.map(d => `<option value="${d}" ${d === current ? 'selected' : ''}>Jour ${d}</option>`).join('');
+}
+
+function exportCsv() { window.location.href = '/api/contacts/export'; }
+
+// ── Status polling ─────────────────────────────────────────
+async function pollStatus() {
+  const r = await fetch('/api/status');
+  const d = await r.json();
+  const pill = document.getElementById('statusPill');
+  const text = document.getElementById('statusText');
+  if (d.running) {
+    pill.className = 'status-pill running';
+    text.textContent = 'Jour ' + d.day + ' en cours…';
+  } else {
+    pill.className = 'status-pill';
+    text.textContent = 'Prêt';
+  }
+}
+
+// ── Toast ──────────────────────────────────────────────────
+function toast(msg, type = '') {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'toast ' + type + ' show';
+  setTimeout(() => el.classList.remove('show'), 3000);
+}
+
+// ── Utils ──────────────────────────────────────────────────
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// Fermer modal en cliquant hors
+document.getElementById('runModal').addEventListener('click', e => {
+  if (e.target === e.currentTarget) closeModal();
+});
+</script>
+</body>
+</html>
