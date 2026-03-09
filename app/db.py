@@ -3,8 +3,11 @@ import sqlite3
 from datetime import datetime
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-DB_PATH = os.path.join(BASE_DIR, "prospection.db")
-CSV_PATH = os.path.join(BASE_DIR, "prospection_log.csv")
+DATA_DIR = os.getenv("DATA_DIR", BASE_DIR)
+os.makedirs(DATA_DIR, exist_ok=True)
+
+DB_PATH = os.path.join(DATA_DIR, "prospection.db")
+CSV_PATH = os.path.join(DATA_DIR, "prospection_log.csv")
 
 
 def get_db():

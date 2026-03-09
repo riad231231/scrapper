@@ -41,8 +41,20 @@ SEARCH_QUERY = os.getenv("SEARCH_QUERY", "salle de mariage ile de france")
 SEARCH_LIMIT = int(os.getenv("SEARCH_LIMIT", "10"))
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-CSV_PATH = os.path.join(BASE_DIR, "prospection_log.csv")
-ROADMAP_PATH = os.path.join(BASE_DIR, "roadmap.json")
+# DATA_DIR = dossier des fichiers persistants (DB, CSV, roadmap)
+# En local : même dossier que le code
+# Sur VPS  : /app/data (volume Docker monté séparément)
+DATA_DIR = os.getenv("DATA_DIR", BASE_DIR)
+os.makedirs(DATA_DIR, exist_ok=True)
+
+CSV_PATH = os.path.join(DATA_DIR, "prospection_log.csv")
+ROADMAP_PATH = os.path.join(DATA_DIR, "roadmap.json")
+
+# Si roadmap.json n'existe pas dans DATA_DIR, copier depuis BASE_DIR
+_src_roadmap = os.path.join(BASE_DIR, "roadmap.json")
+if not os.path.exists(ROADMAP_PATH) and os.path.exists(_src_roadmap) and DATA_DIR != BASE_DIR:
+    import shutil
+    shutil.copy(_src_roadmap, ROADMAP_PATH)
 
 EMAIL_SUBJECT = "Collaboration Photo/Vidéo"
 
